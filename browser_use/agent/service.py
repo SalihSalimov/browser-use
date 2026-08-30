@@ -86,6 +86,11 @@ from browser_use.utils import (
 logger = logging.getLogger(__name__)
 
 
+def _should_capture_screenshot(use_vision: bool | Literal['auto']) -> bool:
+	"""Capture screenshots only when the caller may consume them."""
+	return use_vision is not False
+
+
 def log_response(response: AgentOutput, registry=None, logger=None) -> None:
 	"""Utility function to log the model's response."""
 
@@ -1085,10 +1090,10 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 		assert self.browser_session is not None, 'BrowserSession is not set up'
 
 		self.logger.debug(f'🌐 Step {self.state.n_steps}: Getting browser state...')
-		# Always take screenshots for all steps
-		self.logger.debug('📸 Requesting browser state with include_screenshot=True')
+		capture_screenshot = _should_capture_screenshot(self.settings.use_vision)
+		self.logger.debug(f'📸 Requesting browser state with include_screenshot={capture_screenshot}')
 		browser_state_summary = await self.browser_session.get_browser_state_summary(
-			include_screenshot=True,  # always capture even if use_vision=False so that cloud sync is useful (it's fast now anyway)
+			include_screenshot=capture_screenshot,
 			include_recent_events=self.include_recent_events,
 		)
 		if browser_state_summary.screenshot:
