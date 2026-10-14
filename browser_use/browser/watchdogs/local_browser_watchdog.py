@@ -413,7 +413,9 @@ class LocalBrowserWatchdog(BaseWatchdog):
 
 		while asyncio.get_event_loop().time() - start_time < timeout:
 			try:
-				async with aiohttp.ClientSession() as session:
+				# A pending first connection must not consume the whole browser-start budget.
+				request_timeout = aiohttp.ClientTimeout(total=2, connect=1)
+				async with aiohttp.ClientSession(timeout=request_timeout) as session:
 					async with session.get(f'http://127.0.0.1:{port}/json/version') as resp:
 						if resp.status == 200:
 							# Chrome is ready
